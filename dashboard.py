@@ -50,6 +50,19 @@ def get_dashboard_kpis():
 
     return total, buy, sell, hold, last_date
 
+def get_decision_trends():
+    conn = get_connection()
+    df = pd.read_sql("SELECT decision, timestamp FROM decision_log", conn)
+    conn.close()
+
+    if df.empty:
+        return pd.DataFrame()
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["date"] = df["timestamp"].dt.date
+    trends = df.groupby(["date", "decision"]).size().unstack(fill_value=0)
+    return trends
+
 # === Authentification ===
 names = ["Admin"]
 usernames = [os.getenv("APP_USERNAME")]
@@ -89,6 +102,16 @@ col2.metric("🟢 BUY", buy)
 col3.metric("🔴 SELL", sell)
 col4.metric("⚪ HOLD", hold)
 col5.metric("🕒 Dernière décision", str(last_date)[:16])
+
+# === Évolution temporelle ===
+st.subheader("📅 Évolution quotidienne des décisions")
+
+trends_df = get_decision_trends()
+
+if not trends_df.empty:
+    st.line_chart(trends_df)
+else:
+    st.info("Pas encore assez de données pour afficher une tendance.")
 
 # Affichage des statistiques
 st.subheader("📈 Répartition des décisions")
