@@ -1,0 +1,7 @@
+openai
+ccxt
+requests
+python-dotenv
+streamlit
+psycopg2-binary
+pandas
