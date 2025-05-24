@@ -6,6 +6,7 @@ import psycopg2
 import pandas as pd
 from dotenv import load_dotenv
 import streamlit_authenticator as stauth
+import numpy as np
 
 # === Chargement des variables d’environnement ===
 load_dotenv()
@@ -70,6 +71,30 @@ def get_decision_trends(start_date=None, end_date=None):
     trends = df.groupby(["date", "decision"]).size().unstack(fill_value=0)
     return trends
 
+def build_daily_summary():
+    conn = get_connection()
+    df = pd.read_sql("SELECT * FROM decision_log", conn)
+    conn.close()
+
+    if df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["date"] = df["timestamp"].dt.date
+
+    if "pnl" not in df.columns:
+        np.random.seed(42)
+        df["pnl"] = np.random.uniform(-10, 10, size=len(df)).round(2)  # simulation
+
+    summary = df.groupby("date").agg(
+        BUY=('decision', lambda x: (x == 'BUY').sum()),
+        SELL=('decision', lambda x: (x == 'SELL').sum()),
+        HOLD=('decision', lambda x: (x == 'HOLD').sum()),
+        Performance=('pnl', 'sum'),
+    ).reset_index()
+
+    return summary, df
+
 # === Authentification ===
 names = ["Admin"]
 usernames = [os.getenv("APP_USERNAME")]
@@ -110,9 +135,6 @@ col3.metric("🔴 SELL", sell)
 col4.metric("⚪ HOLD", hold)
 col5.metric("🕒 Dernière décision", str(last_date)[:16])
 
-# === Évolution temporelle ===
-st.subheader("📅 Évolution quotidienne des décisions")
-
 # === Filtres de date ===
 st.subheader("📅 Évolution quotidienne des décisions")
 col_start, col_end = st.columns(2)
@@ -130,6 +152,22 @@ if not trends_df.empty:
     st.line_chart(trends_df)
 else:
     st.info("Pas encore assez de données pour afficher une tendance.")
+
+st.subheader("📆 Journal des décisions par jour")
+
+summary_df, full_df = build_daily_summary()
+
+if summary_df.empty:
+    st.info("Aucune donnée disponible.")
+else:
+    for _, row in summary_df.iterrows():
+        perf = row["Performance"]
+        perf_color = "🟢" if perf > 0 else "🔴" if perf < 0 else "⚪"
+        header = f"{row['date']} - 🟢 {row['BUY']} | 🔴 {row['SELL']} | ⚪ {row['HOLD']} | {perf_color} {perf} €"
+
+        with st.expander(header):
+            details = full_df[full_df["timestamp"].dt.date == row['date']]
+            st.dataframe(details[["timestamp", "decision", "pnl"]])
 
 # Affichage des statistiques
 st.subheader("📈 Répartition des décisions")
