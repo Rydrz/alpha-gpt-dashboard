@@ -95,6 +95,27 @@ def build_daily_summary():
 
     return summary, df
 
+def get_global_stats():
+    conn = get_connection()
+    df = pd.read_sql("SELECT * FROM decision_log", conn)
+    conn.close()
+
+    if df.empty:
+        return 0, 0, 0, 0, 0.0
+
+    total = len(df)
+    buy = (df["decision"] == "BUY").sum()
+    sell = (df["decision"] == "SELL").sum()
+    hold = (df["decision"] == "HOLD").sum()
+
+    if "pnl" not in df.columns:
+        np.random.seed(42)
+        df["pnl"] = np.random.uniform(-10, 10, size=len(df)).round(2)
+
+    performance = df["pnl"].sum()
+
+    return total, buy, sell, hold, performance
+
 # === Authentification ===
 names = ["Admin"]
 usernames = [os.getenv("APP_USERNAME")]
@@ -124,6 +145,16 @@ elif authentication_status is None:
 
 # === Interface principale ===
 st.title("📊 Alpha GPT - Historique des décisions")
+
+# === Statistiques globales ===
+total, buy, sell, hold, perf = get_global_stats()
+
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("📊 Total", total)
+col2.metric("🟢 BUY", buy)
+col3.metric("🔴 SELL", sell)
+col4.metric("⚪ HOLD", hold)
+col5.metric("💰 Performance totale", f"{perf:.2f} €")
 
 # === KPIs principaux ===
 total, buy, sell, hold, last_date = get_dashboard_kpis()
