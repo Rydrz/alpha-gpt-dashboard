@@ -9,15 +9,20 @@ import streamlit_authenticator as stauth
 
 # Création de l'authentificateur
 names = ["Admin"]
-usernames = ["admin"]
-passwords = ["alphaGPT2025"]  # mot de passe à modifier
+usernames = [os.getenv("APP_USERNAME")]
+passwords = [os.getenv("APP_PASSWORD")]
 
 hashed_passwords = stauth.Hasher(passwords).generate()
 
+cookie_name = "alpha_gpt_dashboard"
+cookie_key = os.getenv("APP_COOKIE_KEY")
+
 authenticator = stauth.Authenticate(
-    {"usernames": {"admin": {"name": "Admin", "password": hashed_passwords[0]}}},
-    "alpha_gpt_dashboard",  # nom de cookie
-    "abcdef123456",          # clé de signature (change-la si tu veux)
+    {"usernames": {
+        usernames[0]: {"name": names[0], "password": stauth.Hasher(passwords).generate()[0]}
+    }},
+    cookie_name,
+    cookie_key,
     cookie_expiry_days=1
 )
 
