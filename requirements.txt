@@ -2,6 +2,6 @@ openai
 ccxt
 requests
 python-dotenv
-streamlit
+streamlit-authenticator==0.2.3
 psycopg2-binary
 pandas
