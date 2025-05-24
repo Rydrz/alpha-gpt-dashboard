@@ -50,7 +50,7 @@ def get_dashboard_kpis():
 
     return total, buy, sell, hold, last_date
 
-def get_decision_trends():
+def get_decision_trends(start_date=None, end_date=None):
     conn = get_connection()
     df = pd.read_sql("SELECT decision, timestamp FROM decision_log", conn)
     conn.close()
@@ -60,6 +60,13 @@ def get_decision_trends():
 
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["date"] = df["timestamp"].dt.date
+
+    # Appliquer les filtres
+    if start_date:
+        df = df[df["date"] >= start_date]
+    if end_date:
+        df = df[df["date"] <= end_date]
+
     trends = df.groupby(["date", "decision"]).size().unstack(fill_value=0)
     return trends
 
@@ -105,6 +112,17 @@ col5.metric("🕒 Dernière décision", str(last_date)[:16])
 
 # === Évolution temporelle ===
 st.subheader("📅 Évolution quotidienne des décisions")
+
+# === Filtres de date ===
+st.subheader("📅 Évolution quotidienne des décisions")
+col_start, col_end = st.columns(2)
+
+with col_start:
+    start_date = st.date_input("📆 Date de début", value=None)
+with col_end:
+    end_date = st.date_input("📆 Date de fin", value=None)
+
+trends_df = get_decision_trends(start_date, end_date)
 
 trends_df = get_decision_trends()
 
