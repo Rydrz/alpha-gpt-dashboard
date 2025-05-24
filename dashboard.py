@@ -1,25 +1,29 @@
 import streamlit as st
+
+# ✅ CONFIG Streamlit en tout premier
+st.set_page_config(page_title="Alpha GPT - Dashboard", layout="wide")
+
+# Autres imports
 import psycopg2
 import pandas as pd
 import os
 from dotenv import load_dotenv
-
-# === Authentification simple ===
 import streamlit_authenticator as stauth
 
-# Création de l'authentificateur
+# Authentification dynamique
+load_dotenv()
+
 names = ["Admin"]
 usernames = [os.getenv("APP_USERNAME")]
 passwords = [os.getenv("APP_PASSWORD")]
+cookie_key = os.getenv("APP_COOKIE_KEY")
+cookie_name = "alpha_gpt_dashboard"
 
 hashed_passwords = stauth.Hasher(passwords).generate()
 
-cookie_name = "alpha_gpt_dashboard"
-cookie_key = os.getenv("APP_COOKIE_KEY")
-
 authenticator = stauth.Authenticate(
     {"usernames": {
-        usernames[0]: {"name": names[0], "password": stauth.Hasher(passwords).generate()[0]}
+        usernames[0]: {"name": names[0], "password": hashed_passwords[0]}
     }},
     cookie_name,
     cookie_key,
@@ -30,6 +34,7 @@ name, authentication_status, username = authenticator.login("🔐 Connexion", "m
 
 if authentication_status is False:
     st.error("Mot de passe incorrect.")
+    st.stop()
 elif authentication_status is None:
     st.warning("Veuillez entrer vos identifiants.")
     st.stop()
