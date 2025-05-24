@@ -40,7 +40,6 @@ elif authentication_status is None:
     st.stop()
 else:
     # === Interface principale du dashboard ===
-    st.set_page_config(page_title="Alpha GPT - Dashboard", layout="wide")
     st.title("📊 Alpha GPT - Historique des décisions")
 
     # Affichage des statistiques
