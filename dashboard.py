@@ -37,6 +37,19 @@ def fetch_decision_stats():
     conn.close()
     return df
 
+def get_dashboard_kpis():
+    conn = get_connection()
+    df = pd.read_sql("SELECT decision, timestamp FROM decision_log", conn)
+    conn.close()
+
+    total = len(df)
+    buy = len(df[df["decision"] == "BUY"])
+    sell = len(df[df["decision"] == "SELL"])
+    hold = len(df[df["decision"] == "HOLD"])
+    last_date = df["timestamp"].max() if not df.empty else "Aucune"
+
+    return total, buy, sell, hold, last_date
+
 # === Authentification ===
 names = ["Admin"]
 usernames = [os.getenv("APP_USERNAME")]
@@ -66,6 +79,16 @@ elif authentication_status is None:
 
 # === Interface principale ===
 st.title("📊 Alpha GPT - Historique des décisions")
+
+# === KPIs principaux ===
+total, buy, sell, hold, last_date = get_dashboard_kpis()
+
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("📊 Total", total)
+col2.metric("🟢 BUY", buy)
+col3.metric("🔴 SELL", sell)
+col4.metric("⚪ HOLD", hold)
+col5.metric("🕒 Dernière décision", str(last_date)[:16])
 
 # Affichage des statistiques
 st.subheader("📈 Répartition des décisions")
